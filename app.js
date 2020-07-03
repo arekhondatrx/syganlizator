@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const retry = require('retryer');
+
 const changeState = require('./routes/changeState');
 const sender = require('./serverAccessLayer')
 
@@ -10,7 +12,7 @@ const app = express();
 const port = process.argv.slice(2)[0] | Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
 const id = process.argv.slice(2)[1] | port
 const url = `http://localhost:${port}`;
-const serverUrl = 'http://localhost:2000'; // do configu
+const serverUrl = 'http://localhost:2000/init'; // do configu
 
 // view engine setup
 
@@ -25,6 +27,11 @@ app.listen(port, () => {
 });
 
 const body = {id, url}
-sender.sendData(body, serverUrl)
-    .then(result => console.log(`Response: ${JSON.stringify(result)}`))
-    .catch(err => console.log(`${err}`));
+const retryOption = { // config
+  timeout: 2500,
+  total: 15
+}
+
+retry.default(() => sender.sendData(body, serverUrl), retryOption)
+                      .then(result => console.log(`Response: ${JSON.stringify(result)}`))
+                      .catch(err => console.log(`${err}`))
