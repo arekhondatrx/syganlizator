@@ -4,17 +4,18 @@ const retry = require('retryer');
 
 const changeState = require('./routes/changeState');
 const sender = require('./serverAccessLayer')
+const config = require('./configReader').getConfig();
 
-const maxPort = 40000;
-const minPort = 3000;
+const maxPort = config.server.maxPort;
+const minPort = config.server.minPort;
 
 const app = express();
-const port = process.argv.slice(2)[0] | Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
-const id = process.argv.slice(2)[1] | port
-const url = `http://localhost:${port}`;
-const serverUrl = 'http://localhost:2000/init'; // do configu
+let port = process.argv.slice(2)[0];
+port = port ? port : Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
+let id = process.argv.slice(2)[1];
+id = id ? id : port;
 
-// view engine setup
+const url = `http://localhost:${port}`;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -27,11 +28,7 @@ app.listen(port, () => {
 });
 
 const body = {id, url}
-const retryOption = { // config
-  timeout: 2500,
-  total: 15
-}
 
-retry.default(() => sender.sendData(body, serverUrl), retryOption)
+retry.default(() => sender.sendData(body, config.driver.url), config.retryOption)
                       .then(result => console.log(`Response: ${JSON.stringify(result)}`))
-                      .catch(err => console.log(`${err}`))
+                      .catch(err => console.log(`${err}`));

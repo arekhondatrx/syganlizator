@@ -1,0 +1,10 @@
+server:
+  maxPort: 9999
+  minPort: 3333
+
+driver:
+  url: 'http://localhost:2000/init'
+
+retryOption:
+  timeout: 5000
+  total: 99
