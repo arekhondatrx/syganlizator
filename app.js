@@ -1,18 +1,34 @@
 const express = require('express');
 const path = require('path');
-const index = require('./routes/changeState');
+const retry = require('retryer');
+
+const changeState = require('./routes/changeState');
+const sender = require('./serverAccessLayer')
+const config = require('./configReader').getConfig();
+
+const maxPort = config.server.maxPort;
+const minPort = config.server.minPort;
 
 const app = express();
-const port = 3000;
+let port = process.argv.slice(2)[0];
+port = port ? port : Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
+let id = process.argv.slice(2)[1];
+id = id ? id : port;
 
-// view engine setup
+const url = `http://localhost:${port}`;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', index);
+app.use('/', changeState);
 
 app.listen(port, () => {
-  console.log(`Listening to requests on http://localhost:${port}`);
+  console.log(`Listening on http://localhost:${port}`);
 });
+
+const body = {id, url}
+
+retry.default(() => sender.sendData(body, config.driver.url), config.retryOption)
+                      .then(result => console.log(`Response: ${JSON.stringify(result)}`))
+                      .catch(err => console.log(`${err}`));
