@@ -3,8 +3,4 @@ server:
   minPort: 3333
 
 driver:
-  url: 'http://localhost:2000/init'
-
-retryOption:
-  timeout: 5000
-  total: 99
+  url: 'ws://localhost:2000'
